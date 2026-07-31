@@ -58,38 +58,6 @@ docker build -t registro-sacos .
 docker run -p 3000:3000 registro-sacos
 ```
 
-## ⚠️ Importante sobre o deploy na Vercel
-
-Você pediu para subir isso na Vercel usando o Dockerfile, mas vale alinhar
-uma coisa: **a Vercel não roda o Dockerfile** — ela faz o build do Next.js
-diretamente a partir do repositório (o Dockerfile serve para você rodar isso
-em outro lugar, tipo um VPS, Railway, Render, Fly.io etc.).
-
-Além disso, mesmo fazendo o deploy direto do Next.js na Vercel (sem Docker),
-as funções serverless da Vercel têm sistema de arquivos **somente leitura**,
-exceto a pasta `/tmp`, que é apagada sempre que a instância "esfria". Ou
-seja, nesse tipo de hospedagem:
-
-- Os registros **não persistem entre deploys**.
-- Em produção, instâncias diferentes da função podem não enxergar os
-  mesmos dados (cada uma tem seu próprio `/tmp`).
-- Funciona bem para demonstração/protótipo, mas não é confiável para uso
-  real da empresa.
-
-Duas opções, dependendo do que você quer agora:
-
-1. **Só para demonstrar na Vercel**: pode subir do jeito que está. O app já
-   detecta `process.env.VERCEL` e usa `/tmp/sacos.json`, então funciona
-   durante a sessão, só não é definitivo.
-2. **Para usar de verdade com JSON em arquivo**: rode com o Dockerfile em um
-   host com disco persistente (um volume montado em `/app/data`), como
-   Railway, Render ou um VPS simples.
-
-Quando quiser trocar para o banco de dados da empresa, o único lugar que
-precisa mudar é `src/lib/db.ts` — todo o resto (telas, API routes) já fala
-com essas 3 funções (`lerSacos`, `salvarNovoSaco`, `atualizarStatusSaco`) e
-não precisa ser alterado.
-
 ## Estrutura
 
 - `src/app/perdidos` — tela de registro/listagem de sacos perdidos
