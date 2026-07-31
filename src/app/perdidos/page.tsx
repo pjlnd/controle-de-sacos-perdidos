@@ -16,19 +16,25 @@ export default function PerdidosPage() {
 
   const perdidos = useMemo(() => sacos.filter((s) => s.status === 'perdido'), [sacos]);
 
+  const perdidosSemFiltroCarrossel = useMemo(() => {
+    return perdidos.filter((s) => {
+      if (busca && !s.numero.includes(busca)) return false
+      if (filtroData && s.data !== filtroData) return false
+      return true
+    })
+  }, [perdidos, busca, filtroData])
+
   const carrosseis = useMemo(
-    () => Array.from(new Set(perdidos.map((s) => s.carrossel))).sort(),
-    [perdidos]
+    () => Array.from(new Set(perdidosSemFiltroCarrossel.map((s) => s.carrossel))).sort(),
+    [perdidosSemFiltroCarrossel]
   );
 
   const filtrados = useMemo(() => {
-    return perdidos.filter((s) => {
-      if (busca && !s.numero.includes(busca)) return false;
-      if (filtroData && s.data !== filtroData) return false;
-      if (filtroCarrossel && s.carrossel !== filtroCarrossel) return false;
-      return true;
-    });
-  }, [perdidos, busca, filtroData, filtroCarrossel]);
+    return perdidosSemFiltroCarrossel.filter((s) => {
+      if (filtroCarrossel && s.carrossel !== filtroCarrossel) return false
+      return true
+    })
+  }, [perdidosSemFiltroCarrossel, filtroCarrossel]);
 
   const totalPerdidos = filtrados.length;
 

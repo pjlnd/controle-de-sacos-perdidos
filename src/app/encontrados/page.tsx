@@ -14,19 +14,25 @@ export default function EncontradosPage() {
 
   const encontrados = useMemo(() => sacos.filter((s) => s.status === 'encontrado'), [sacos]);
 
+  const encontradosSemFiltroCarrossel = useMemo(()=> {
+    return encontrados.filter((s) => {
+      if (busca && !s.numero.includes(busca)) return false
+      if (filtroData && s.data !== filtroData) return false
+      return true
+    })
+  }, [encontrados, busca, filtroData])
+
   const carrosseis = useMemo(
-    () => Array.from(new Set(encontrados.map((s) => s.carrossel))).sort(),
-    [encontrados]
+    () => Array.from(new Set(encontradosSemFiltroCarrossel.map((s) => s.carrossel))).sort(),
+    [encontradosSemFiltroCarrossel]
   );
 
   const filtrados = useMemo(() => {
-    return encontrados.filter((s) => {
-      if (filtroData && s.data !== filtroData) return false;
-      if (busca && !s.numero.includes(busca)) return false;
-      if (filtroCarrossel && s.carrossel !== filtroCarrossel) return false;
-      return true;
-    });
-  }, [encontrados, busca, filtroData, filtroCarrossel]);
+    return encontradosSemFiltroCarrossel.filter((s) => {
+      if (filtroCarrossel && s.carrossel !== filtroCarrossel) return false
+      return true
+    })
+  }, [encontradosSemFiltroCarrossel, filtroCarrossel]);
 
   const totalEncontrados = filtrados.length;
 
