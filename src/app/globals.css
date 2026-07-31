@@ -1,0 +1,58 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-stencil: 'Oswald', 'Arial Narrow', sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', 'Courier New', monospace;
+}
+
+body {
+  background-color: #EDE6D6;
+  background-image:
+    radial-gradient(circle at 1px 1px, rgba(31, 42, 56, 0.06) 1px, transparent 0);
+  background-size: 22px 22px;
+  color: #1F2A38;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+:focus-visible {
+  outline: 2px solid #1F2A38;
+  outline-offset: 2px;
+}
+
+/* Cartão em formato de etiqueta de armazém, com furo de amarrar no canto */
+.tag-card {
+  position: relative;
+  background: #FBF8F1;
+  border: 1.5px dashed #B9AE8F;
+  border-radius: 4px;
+  box-shadow: 2px 3px 0 rgba(31, 42, 56, 0.08);
+}
+
+.tag-hole {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: #EDE6D6;
+  border: 1.5px solid #B9AE8F;
+}
+
+.stamp {
+  transform: rotate(-6deg);
+  letter-spacing: 0.08em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}

@@ -1,0 +1,140 @@
+{
+  "C01": {
+    "sacos": {
+      "1": {
+        "numero": "182929",
+        "artigo": "AKALA",
+        "cor": "ASDAS",
+        "tamanho": "38",
+        "turno": "3",
+        "data": "2026-07-11",
+        "armazem": "25",
+        "prateleira": "07",
+        "motivo": "Não encontrado",
+        "status": "encontrado",
+        "criadoEm": "2026-07-23T22:58:55.169Z",
+        "encontradoEm": "2026-07-23T22:59:01.611Z"
+      },
+      "2": {
+        "numero": "123123",
+        "artigo": "131231ASDA",
+        "cor": "ASASDASD",
+        "tamanho": "36",
+        "turno": "1",
+        "data": "2026-07-30",
+        "armazem": "12",
+        "prateleira": "2",
+        "motivo": "Não encontrado",
+        "status": "perdido",
+        "criadoEm": "2026-07-30T22:09:45.847Z"
+      }
+    }
+  },
+  "C02": {
+    "sacos": {}
+  },
+  "C03": {
+    "sacos": {
+      "1": {
+        "numero": "104582",
+        "artigo": "A2231B",
+        "cor": "AZ01",
+        "tamanho": "42",
+        "turno": "1",
+        "data": "2026-07-22",
+        "armazem": "2",
+        "prateleira": "14",
+        "motivo": "Não encontrado",
+        "status": "encontrado",
+        "criadoEm": "2026-07-22T09:12:00.000Z",
+        "encontradoEm": "2026-07-23T22:55:17.230Z"
+      }
+    }
+  },
+  "C04": {
+    "sacos": {}
+  },
+  "C05": {
+    "sacos": {}
+  },
+  "C06": {
+    "sacos": {}
+  },
+  "C07": {
+    "sacos": {}
+  },
+  "C08": {
+    "sacos": {}
+  },
+  "C09": {
+    "sacos": {}
+  },
+  "C10": {
+    "sacos": {}
+  },
+  "C11": {
+    "sacos": {}
+  },
+  "C12": {
+    "sacos": {}
+  },
+  "C13": {
+    "sacos": {
+      "1": {
+        "numero": "123459",
+        "artigo": "CAB34590",
+        "cor": "MARORG",
+        "tamanho": "38",
+        "turno": "1",
+        "data": "2026-07-23",
+        "armazem": "36",
+        "prateleira": "5",
+        "motivo": "Não encontrado",
+        "status": "encontrado",
+        "criadoEm": "2026-07-23T22:48:31.624Z",
+        "encontradoEm": "2026-07-23T22:48:47.255Z"
+      },
+      "2": {
+        "numero": "156982",
+        "artigo": "CAB7819282",
+        "cor": "MARORG",
+        "tamanho": "38",
+        "turno": "2",
+        "data": "2026-07-12",
+        "armazem": "45",
+        "prateleira": "07",
+        "motivo": "Não encontrado",
+        "status": "perdido",
+        "criadoEm": "2026-07-23T22:57:40.531Z"
+      },
+      "3": {
+        "numero": "156516",
+        "artigo": "JHKJHKJH",
+        "cor": "JHKJHK",
+        "tamanho": "38",
+        "turno": "1",
+        "data": "2026-07-23",
+        "armazem": "24",
+        "prateleira": "23",
+        "motivo": "Não encontrado",
+        "status": "encontrado",
+        "criadoEm": "2026-07-23T23:08:58.653Z",
+        "encontradoEm": "2026-07-30T22:40:47.996Z"
+      },
+      "4": {
+        "numero": "289293",
+        "artigo": "AABB17871287",
+        "cor": "AMRORG",
+        "tamanho": "34",
+        "turno": "1",
+        "data": "2026-07-30",
+        "armazem": "10",
+        "prateleira": "7",
+        "motivo": "Não encontrado",
+        "status": "encontrado",
+        "criadoEm": "2026-07-30T21:15:58.537Z",
+        "encontradoEm": "2026-07-30T21:46:00.399Z"
+      }
+    }
+  }
+}
