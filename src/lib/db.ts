@@ -1,186 +1,75 @@
-import { promises as fs } from 'fs';
-import path from 'path';
-import { CARROSSEIS } from './carrosseis';
-import type { BancoSacos, CarrosselId, NovoSacoInput, SacoDados, SacoFlat, StatusSaco } from './types';
+import { ObjectId } from 'mongodb';
+import clientPromise from './mongodb';
+import type { NovoSacoInput, SacoDados, SacoFlat, StatusSaco } from './types';
 
-// Em produção "serverless" (ex.: Vercel) o sistema de arquivos do projeto é
-// somente leitura fora de /tmp, e /tmp é apagado a cada nova instância da
-// função. Ou seja, nesse tipo de hospedagem os dados NÃO persistem entre
-// deploys/instâncias frias. Para persistência de verdade, rode o Dockerfile
-// deste projeto em um host com disco (Railway, Render, um VPS, etc.) e monte
-// um volume em /app/data, ou troque este arquivo por um banco de dados real.
-const DATA_DIR =
-  process.env.VERCEL === '1' ? '/tmp' : path.join(process.cwd(), 'data');
-const DATA_FILE = path.join(DATA_DIR, 'sacos.json');
-const SEED_FILE = path.join(process.cwd(), 'data', 'sacos.json');
+const NOME_BANCO = 'registro_sacos';
+const NOME_COLECAO = 'sacos';
 
-const TOTAL_CARROSSEIS = 13; // C01 até C13
-
-export function carrosselKey(n: number): CarrosselId {
-  return `C${String(n).padStart(2, '0')}`;
+async function colecaoSacos() {
+  const client = await clientPromise;
+  return client.db(NOME_BANCO).collection<SacoDados>(NOME_COLECAO);
 }
 
-let writeQueue: Promise<unknown> = Promise.resolve();
-
-function bancoVazio(): BancoSacos {
-  const banco: BancoSacos = {};
-  for (const c of CARROSSEIS) {
-    banco[c] = { sacos: {} };
-  }
-  return banco;
+// Documento como vem do Mongo (com _id) -> formato usado no front-end (com id string)
+function paraSacoFlat(doc: SacoDados & { _id: ObjectId }): SacoFlat {
+  const { _id, ...resto } = doc;
+  return { ...resto, id: _id.toString() };
 }
 
-/** Garante que todos os carrosséis C01..C13 existam no banco, mesmo que o
- *  arquivo em disco tenha sido criado antes de algum carrossel ser adicionado. */
-function normalizarBanco(banco: BancoSacos): BancoSacos {
-  for (const c of CARROSSEIS) {
-    if (!banco[c]) banco[c] = { sacos: {} };
-    if (!banco[c].sacos) banco[c].sacos = {};
-  }
-  return banco;
+export async function lerSacos(): Promise<SacoFlat[]> {
+  const colecao = await colecaoSacos();
+  const docs = await colecao.find().sort({ criadoEm: -1 }).toArray();
+  return docs.map((d) => paraSacoFlat(d as SacoDados & { _id: ObjectId }));
 }
 
-async function ensureDataFile(): Promise<void> {
-  await fs.mkdir(DATA_DIR, { recursive: true });
-  try {
-    await fs.access(DATA_FILE);
-  } catch {
-    // Se ainda não existe (ex.: primeira execução em /tmp na Vercel),
-    // parte da seed versionada no repositório, ou de um banco vazio.
-    let seed: string | null = null;
-    try {
-      seed = await fs.readFile(SEED_FILE, 'utf-8');
-    } catch {
-      // sem seed disponível
-    }
-    const banco = seed ? normalizarBanco(JSON.parse(seed)) : bancoVazio();
-    await fs.writeFile(DATA_FILE, JSON.stringify(banco, null, 2), 'utf-8');
-  }
+export async function salvarNovoSaco(input: NovoSacoInput): Promise<SacoFlat[]> {
+  const colecao = await colecaoSacos();
+
+  const novoSaco: SacoDados = {
+    numero: input.numero,
+    artigo: input.artigo.toUpperCase(),
+    cor: input.cor.toUpperCase(),
+    tamanho: input.tamanho,
+    turno: input.turno,
+    data: input.data,
+    carrossel: input.carrossel,
+    retiradoPeloSistema: input.retiradoPeloSistema,
+    ...(input.retiradoPeloSistema
+      ? {}
+      : { armazem: input.armazem, prateleira: input.prateleira }),
+    motivo: 'Não encontrado',
+    status: 'perdido',
+    criadoEm: new Date().toISOString(),
+  };
+
+  await colecao.insertOne(novoSaco);
+  return lerSacos();
 }
 
-async function lerBanco(): Promise<BancoSacos> {
-  await ensureDataFile();
-  const raw = await fs.readFile(DATA_FILE, 'utf-8');
-  try {
-    return normalizarBanco(JSON.parse(raw) as BancoSacos);
-  } catch {
-    return bancoVazio();
-  }
-}
-
-async function escreverBanco(banco: BancoSacos): Promise<void> {
-  await ensureDataFile();
-  await fs.writeFile(DATA_FILE, JSON.stringify(banco, null, 2), 'utf-8');
-}
-
-/** Achata o banco (agrupado por carrossel) numa lista única para o front-end. */
-function paraLista(banco: BancoSacos): SacoFlat[] {
-  const lista: SacoFlat[] = [];
-  for (const carrossel of Object.keys(banco)) {
-    const sacos = banco[carrossel]?.sacos ?? {};
-    for (const localIdStr of Object.keys(sacos)) {
-      lista.push({
-        ...sacos[localIdStr],
-        id: `${carrossel}-${localIdStr}`,
-        carrossel,
-        localId: Number(localIdStr),
-      });
-    }
-  }
-  // Mais recentes primeiro
-  lista.sort((a, b) => (a.criadoEm < b.criadoEm ? 1 : -1));
-  return lista;
-}
-
-function parseId(id: string): { carrossel: CarrosselId; localIdStr: string } | null {
-  const idx = id.lastIndexOf('-');
-  if (idx === -1) return null;
-  return { carrossel: id.slice(0, idx), localIdStr: id.slice(idx + 1) };
-}
-
-// Enfileira as escritas para que duas requisições concorrentes não
-// sobrescrevam uma a outra (corrida clássica de leitura-modificação-escrita
-// em arquivo JSON).
-function enfileirar<T>(tarefa: () => Promise<T>): Promise<T> {
-  const execucao = writeQueue.then(tarefa, tarefa);
-  writeQueue = execucao.catch(() => undefined);
-  return execucao;
-}
-
-export function lerSacos(): Promise<SacoFlat[]> {
-  return lerBanco().then(paraLista);
-}
-
-export function salvarNovoSaco(input: NovoSacoInput): Promise<SacoFlat[]> {
-  return enfileirar(async () => {
-    const banco = await lerBanco();
-    const bucket = banco[input.carrossel] ?? { sacos: {} };
-
-    const idsExistentes = Object.keys(bucket.sacos).map(Number).filter((n) => !Number.isNaN(n));
-    const proximoId = idsExistentes.length > 0 ? Math.max(...idsExistentes) + 1 : 1;
-
-    const novoSaco: SacoDados = {
-      numero: input.numero,
-      artigo: input.artigo.toUpperCase(),
-      cor: input.cor.toUpperCase(),
-      tamanho: input.tamanho,
-      turno: input.turno,
-      data: input.data,
-      retiradoPeloSistema: input.retiradoPeloSistema,
-      ...(input.retiradoPeloSistema
-        ? {}
-        : { armazem: input.armazem, prateleira: input.prateleira }),
-      motivo: 'Não encontrado',
-      status: 'perdido',
-      criadoEm: new Date().toISOString(),
-    };
-
-    bucket.sacos[String(proximoId)] = novoSaco;
-    banco[input.carrossel] = bucket;
-
-    await escreverBanco(banco);
-    return paraLista(banco);
-  });
-}
-
-export function atualizarStatusSaco(
+export async function atualizarStatusSaco(
   id: string,
   status: StatusSaco
 ): Promise<SacoFlat[] | null> {
-  return enfileirar(async () => {
-    const banco = await lerBanco();
-    const partes = parseId(id);
-    if (!partes) return null;
+  if (!ObjectId.isValid(id)) return null;
+  const colecao = await colecaoSacos();
 
-    const bucket = banco[partes.carrossel];
-    const saco = bucket?.sacos?.[partes.localIdStr];
-    if (!bucket || !saco) return null;
+  const resultado = await colecao.updateOne(
+    { _id: new ObjectId(id) },
+    status === 'encontrado'
+      ? { $set: { status, encontradoEm: new Date().toISOString() } }
+      : { $set: { status }, $unset: { encontradoEm: '' } }
+  );
 
-    bucket.sacos[partes.localIdStr] = {
-      ...saco,
-      status,
-      encontradoEm: status === 'encontrado' ? new Date().toISOString() : undefined,
-    };
-
-    await escreverBanco(banco);
-    return paraLista(banco);
-  });
+  if (resultado.matchedCount === 0) return null;
+  return lerSacos();
 }
 
-export function excluirSaco(
-  id: string
-): Promise<SacoFlat[] | null> {
-  return enfileirar(async () => {
-    const banco = await lerBanco();
-    const partes = parseId(id);
-    if (!partes) return null;
+export async function excluirSaco(id: string): Promise<SacoFlat[] | null> {
+  if (!ObjectId.isValid(id)) return null;
+  const colecao = await colecaoSacos();
 
-    const bucket = banco[partes.carrossel];
-    if (!bucket || !bucket.sacos[partes.localIdStr]) return null;
+  const resultado = await colecao.deleteOne({ _id: new ObjectId(id) });
+  if (resultado.deletedCount === 0) return null;
 
-    delete bucket.sacos[partes.localIdStr];
-
-    await escreverBanco(banco);
-    return paraLista(banco);
-  });
+  return lerSacos();
 }
