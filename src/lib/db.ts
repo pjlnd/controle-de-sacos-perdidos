@@ -1,5 +1,6 @@
 import { promises as fs } from 'fs';
 import path from 'path';
+import { CARROSSEIS } from './carrosseis';
 import type { BancoSacos, CarrosselId, NovoSacoInput, SacoDados, SacoFlat, StatusSaco } from './types';
 
 // Em produção "serverless" (ex.: Vercel) o sistema de arquivos do projeto é
@@ -18,10 +19,6 @@ const TOTAL_CARROSSEIS = 13; // C01 até C13
 export function carrosselKey(n: number): CarrosselId {
   return `C${String(n).padStart(2, '0')}`;
 }
-
-export const CARROSSEIS: CarrosselId[] = Array.from({ length: TOTAL_CARROSSEIS }, (_, i) =>
-  carrosselKey(i + 1)
-);
 
 let writeQueue: Promise<unknown> = Promise.resolve();
 
@@ -129,8 +126,10 @@ export function salvarNovoSaco(input: NovoSacoInput): Promise<SacoFlat[]> {
       tamanho: input.tamanho,
       turno: input.turno,
       data: input.data,
-      armazem: input.armazem,
-      prateleira: input.prateleira,
+      retiradoPeloSistema: input.retiradoPeloSistema,
+      ...(input.retiradoPeloSistema
+        ? {}
+        : { armazem: input.armazem, prateleira: input.prateleira }),
       motivo: 'Não encontrado',
       status: 'perdido',
       criadoEm: new Date().toISOString(),

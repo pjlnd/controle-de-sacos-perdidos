@@ -2,8 +2,9 @@
 
 import { useState } from 'react';
 import type { NovoSacoInput, Turno } from '@/lib/types';
+import { CARROSSEIS, totalPrateleiras } from '@/lib/carrosseis';
 
-const CARROSSEIS = Array.from({ length: 13 }, (_, i) => `C${String(i + 1).padStart(2, '0')}`);
+// const CARROSSEIS = Array.from({ length: 13 }, (_, i) => `C${String(i + 1).padStart(2, '0')}`);
 
 function hoje(): string {
   const d = new Date();
@@ -21,6 +22,7 @@ const estadoInicial: NovoSacoInput = {
   turno: '1',
   data: hoje(),
   carrossel: 'C01',
+  retiradoPeloSistema: false,
   armazem: '',
   prateleira: '',
 };
@@ -51,8 +53,8 @@ export default function SacoModal({ onFechar, onSalvar }: SacoModalProps) {
       setErro('O número do saco deve ter exatamente 6 dígitos.');
       return;
     }
-    if (!/^[A-Z0-9]+$/.test(form.artigo)) {
-      setErro('O artigo deve conter no máximo 10 caracteres, entre letras mmaiúsculas e números.');
+    if (!/^[A-Z0-9]{1,12}$/.test(form.artigo)) {
+      setErro('O artigo deve conter no máximo 12 caracteres, entre letras maiúsculas e números.');
       return;
     }
     if (!/^[A-Z0-9]{1,8}$/.test(form.cor)) {
@@ -64,23 +66,31 @@ export default function SacoModal({ onFechar, onSalvar }: SacoModalProps) {
       setErro('O tamanho deve ser um número entre 32 e 50.');
       return
     }
-    // if (!/^\d{1,2}$/.test(form.tamanho)) {
-    //   setErro('O tamanho deve ser numérico, com no máximo 2 dígitos.');
-    //   return;
-    // }
-    const armazemNum = Number(form.armazem);
-    if (!form.armazem || !Number.isInteger(armazemNum) || armazemNum < 1 || armazemNum > 72) {
-      setErro('O armazém deve ser um número entre 1 e 72.');
-      return;
-    }
-    const prateleiraNum = Number(form.prateleira);
-    if (!form.prateleira || !Number.isInteger(prateleiraNum) || prateleiraNum < 1 || prateleiraNum > 7) {
-      setErro('A prateleira deve ser um número entre 1 e 7.');
+    if (!form.retiradoPeloSistema) {
+      const armazemNum = Number(form.armazem);
+      if (!form.armazem || !Number.isInteger(armazemNum) || armazemNum < 1 || armazemNum > 72) {
+        setErro('O armazém deve ser um número entre 1 e 72.');
+        return;
+      }
+      const maxPrateleiras = totalPrateleiras(form.carrossel);
+      const prateleiraNum = Number(form.prateleira);
+      if (
+        !form.prateleira ||
+        !Number.isInteger(prateleiraNum) ||
+        prateleiraNum < 1 ||
+        prateleiraNum > maxPrateleiras
+      ) {
+        setErro(`A prateleira deve ser um número entre 1 e ${maxPrateleiras}.`);
+        return;
+      }
     }
 
     setEnviando(true);
     try {
-      await onSalvar(form);
+      const payload: NovoSacoInput = form.retiradoPeloSistema
+        ? { ...form, armazem: undefined, prateleira: undefined }
+        : form;
+      await onSalvar(payload);
       onFechar();
     } catch (err) {
       setErro(err instanceof Error ? err.message : 'Erro ao registrar saco.');
@@ -114,7 +124,7 @@ export default function SacoModal({ onFechar, onSalvar }: SacoModalProps) {
 
         <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-3">
           <div className="col-span-2 sm:col-span-1">
-            <label className={labelClass}>Número do saco (6 dígitos)</label>
+            <label className={labelClass}>Número do saco</label>
             <input
               className={`${inputClass} font-mono`}
               value={form.numero}
@@ -130,14 +140,14 @@ export default function SacoModal({ onFechar, onSalvar }: SacoModalProps) {
             <input
               className={`${inputClass} font-mono uppercase`}
               value={form.artigo}
-              onChange={(e) => atualizar('artigo', e.target.value.toUpperCase().slice(0, 10))}
+              onChange={(e) => atualizar('artigo', e.target.value.toUpperCase().slice(0, 12))}
               placeholder="Ex.: A2231B"
               required
             />
           </div>
 
           <div>
-            <label className={labelClass}>Cor (máx. 8 letras e/ou números)</label>
+            <label className={labelClass}>Cor</label>
             <input
               className={`${inputClass} font-mono uppercase`}
               value={form.cor}
@@ -148,7 +158,7 @@ export default function SacoModal({ onFechar, onSalvar }: SacoModalProps) {
           </div>
 
           <div>
-            <label className={labelClass}>Tamanho (32 à 50)</label>
+            <label className={labelClass}>Tamanho</label>
             <input
               className={inputClass}
               value={form.tamanho}
@@ -188,7 +198,18 @@ export default function SacoModal({ onFechar, onSalvar }: SacoModalProps) {
             <select
               className={inputClass}
               value={form.carrossel}
-              onChange={(e) => atualizar('carrossel', e.target.value)}
+              onChange={(e) => {
+                const novoCarrossel = e.target.value;
+                setForm((f) => {
+                  const max = totalPrateleiras(novoCarrossel);
+                  const prateleiraFoiInvalidada = Number(f.prateleira) > max;
+                  return {
+                    ...f,
+                    carrossel: novoCarrossel,
+                    prateleira: prateleiraFoiInvalidada ? '' : f.prateleira,
+                  };
+                });
+              }}
             >
               {CARROSSEIS.map((c) => (
                 <option key={c} value={c}>
@@ -198,33 +219,73 @@ export default function SacoModal({ onFechar, onSalvar }: SacoModalProps) {
             </select>
           </div>
 
-          <div>
-            <label className={labelClass}>Armazém (1 a 72)</label>
-            <input
-              className={inputClass}
-              value={form.armazem}
-              onChange={(e) => atualizar('armazem', e.target.value.replace(/\D/g, '').slice(0, 2))}
-              inputMode='numeric'
-              placeholder="Ex.: 2"
-              required
-            />
+          <div className="col-span-2">
+            <label className={labelClass}>Retirado pelo sistema?</label>
+            <div className="mt-1 flex gap-2">
+              <button
+                type="button"
+                onClick={() => atualizar('retiradoPeloSistema', false)}
+                className={`flex-1 rounded-md border px-3 py-2 text-sm font-medium transition-colors ${
+                  !form.retiradoPeloSistema
+                    ? 'border-ink bg-ink text-kraft'
+                    : 'border-ink/25 bg-white text-inkfaded hover:bg-black/5'
+                }`}
+              >
+                Não
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  setForm((f) => ({ ...f, retiradoPeloSistema: true, armazem: '', prateleira: '' }))
+                }
+                className={`flex-1 rounded-md border px-3 py-2 text-sm font-medium transition-colors ${
+                  form.retiradoPeloSistema
+                    ? 'border-ink bg-ink text-kraft'
+                    : 'border-ink/25 bg-white text-inkfaded hover:bg-black/5'
+                }`}
+              >
+                Sim
+              </button>
+            </div>
           </div>
 
-          <div className="col-span-2 sm:col-span-1">
-            <label className={labelClass}>Prateleira (1 a 7)</label>
-            <select
-            className={inputClass}
-              value={form.prateleira}
-              onChange={(e) => atualizar('prateleira', e.target.value)}
-            >
-              <option value="">Selecione</option>
-              {['1', '2', '3', '4', '5', '6', '7'].map((p) => (
-                <option key={p} value={p}>
-                  {p}
-                </option>
-              ))}
-            </select>
-          </div>
+          {!form.retiradoPeloSistema && (
+            <>
+              <div>
+                <label className={labelClass}>Armazém</label>
+                <input
+                  className={inputClass}
+                  value={form.armazem ?? ''}
+                  onChange={(e) =>
+                    atualizar('armazem', e.target.value.replace(/\D/g, '').slice(0, 2))
+                  }
+                  inputMode="numeric"
+                  placeholder="Ex.: 2"
+                  required
+                />
+              </div>
+
+              <div className="col-span-2 sm:col-span-1">
+                <label className={labelClass}>
+                  Prateleira
+                </label>
+                <select
+                  className={inputClass}
+                  value={form.prateleira ?? ''}
+                  onChange={(e) => atualizar('prateleira', e.target.value)}
+                >
+                  <option value="">Selecione</option>
+                  {Array.from({ length: totalPrateleiras(form.carrossel) }, (_, i) =>
+                    String(i + 1)
+                  ).map((p) => (
+                    <option key={p} value={p}>
+                      {p}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </>
+          )}
 
           <div className="col-span-2">
             <label className={labelClass}>Motivo</label>

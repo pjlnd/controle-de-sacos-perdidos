@@ -7,13 +7,14 @@ export type CarrosselId = string;
 /** Dados de um saco, do jeito que ficam guardados dentro de cada carrossel. */
 export interface SacoDados {
   numero: string; // 6 dígitos
-  artigo: string; // números com letras maiúsculas
+  artigo: string; // números com letras maiúsculas, até 12 caracteres
   cor: string; // números e/ou letras maiúsculas
   tamanho: string; // número
   turno: Turno;
   data: string; // yyyy-mm-dd
-  armazem: string;
-  prateleira: string;
+  retiradoPeloSistema: boolean;
+  armazem?: string; // não existe se retiradoPeloSistema for true
+  prateleira?: string; // idem
   motivo: 'Não encontrado';
   status: StatusSaco;
   criadoEm: string; // ISO timestamp
@@ -46,6 +47,7 @@ export type NovoSacoInput = {
   turno: Turno;
   data: string;
   carrossel: CarrosselId; // "C01" até "C13"
-  armazem: string;
-  prateleira: string;
+  retiradoPeloSistema: boolean;
+  armazem?: string;
+  prateleira?: string;
 };

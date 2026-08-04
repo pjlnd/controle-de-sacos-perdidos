@@ -46,9 +46,13 @@ export default function SacoTag({ saco, onEncontrado, onExcluir }: SacoTagProps)
           <div className="text-[11px] uppercase tracking-wide text-inkfaded">
             Armazém / Prat.
           </div>
-          <div className="text-base">
-            {saco.armazem} / {saco.prateleira}
-          </div>
+          {saco.retiradoPeloSistema ? (
+            <div className="text-base italic text-inkfaded/70">Retirado pelo sistema</div>
+          ) : (
+            <div className="text-base">
+              {saco.armazem} / {saco.prateleira}
+            </div>
+          )}
         </div>
         <div>
           <div className="text-[11px] uppercase tracking-wide text-inkfaded">
@@ -102,7 +106,7 @@ export default function SacoTag({ saco, onEncontrado, onExcluir }: SacoTagProps)
       {onExcluir && (
         <button
           type='button'
-          onClick={() => {setConfirmando(true)}}
+          onClick={() => { setConfirmando(true) }}
           aria-label="Excluir registro"
           title="Excluir registro"
           className="flex h-10 w-10 items-center justify-center rounded-md border border-alert/40 text-alert transition-colors hover:bg-alert hover:text-white"
