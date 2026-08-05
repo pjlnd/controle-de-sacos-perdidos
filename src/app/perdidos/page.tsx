@@ -1,5 +1,6 @@
 'use client';
 
+import Toast from '@/components/Toast';
 import { useMemo, useState } from 'react';
 import { useSacos } from '@/hooks/useSacos';
 import SacoTag from '@/components/SacoTag';
@@ -14,6 +15,8 @@ export default function PerdidosPage() {
   const [filtroData, setFiltroData] = useState('');
   const [filtroCarrossel, setFiltroCarrossel] = useState('');
   const [filtroTurno, setFiltroTurno] = useState('');
+  const [mostrarToast, setMostrarToast] = useState(false);
+  const [toastKey, setToastKey] = useState(0);
 
   const perdidos = useMemo(() => sacos.filter((s) => s.status === 'perdido'), [sacos]);
 
@@ -44,6 +47,12 @@ const filtrados = useMemo(() => {
 }, [perdidosBase, filtroCarrossel, filtroTurno]);
 
   const totalPerdidos = filtrados.length;
+
+  function handleEncontrado(id: string) {
+    marcarEncontrado(id);
+    setToastKey((k) => k + 1);
+    setMostrarToast(true);
+  }
 
   return (
     <div className="flex flex-col gap-5">
@@ -92,13 +101,21 @@ const filtrados = useMemo(() => {
       ) : (
         <div className="flex flex-col gap-3">
           {filtrados.map((saco) => (
-            <SacoTag key={saco.id} saco={saco} onEncontrado={marcarEncontrado} onExcluir={excluirSaco}/>
+            <SacoTag key={saco.id} saco={saco} onEncontrado={handleEncontrado} onExcluir={excluirSaco}/>
           ))}
         </div>
       )}
 
       {modalAberto && (
         <SacoModal onFechar={() => setModalAberto(false)} onSalvar={criarSaco} />
+      )}
+
+      {mostrarToast && (
+        <Toast
+        key={toastKey}
+        mensagem="Saco encontrado"
+        onFechar={() => setMostrarToast(false)}
+        />
       )}
     </div>
   );
