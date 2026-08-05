@@ -16,30 +16,32 @@ export default function PerdidosPage() {
   const [filtroTurno, setFiltroTurno] = useState('');
 
   const perdidos = useMemo(() => sacos.filter((s) => s.status === 'perdido'), [sacos]);
-  
-  const turnos = ['1', '2', '3']
-  
-  const perdidosSemFiltroCarrossel = useMemo(() => {
-    return perdidos.filter((s) => {
-      if (busca && !s.numero.includes(busca)) return false
-      if (filtroData && s.data !== filtroData) return false
-      if (filtroTurno && s.turno !== filtroTurno) return false
-      return true
-    })
-  }, [perdidos, busca, filtroData, filtroTurno])
 
-  const carrosseis = useMemo(
-    () => Array.from(new Set(perdidosSemFiltroCarrossel.map((s) => s.carrossel))).sort(),
-    [perdidosSemFiltroCarrossel]
-  );
+const perdidosBase = useMemo(() => {
+  return perdidos.filter((s) => {
+    if (busca && !s.numero.includes(busca)) return false;
+    if (filtroData && s.data !== filtroData) return false;
+    return true;
+  });
+}, [perdidos, busca, filtroData]);
 
+const carrosseis = useMemo(() => {
+  const lista = perdidosBase.filter((s) => !filtroTurno || s.turno === filtroTurno);
+  return Array.from(new Set(lista.map((s) => s.carrossel))).sort();
+}, [perdidosBase, filtroTurno]);
 
-  const filtrados = useMemo(() => {
-    return perdidosSemFiltroCarrossel.filter((s) => {
-      if (filtroCarrossel && s.carrossel !== filtroCarrossel) return false
-      return true
-    })
-  }, [perdidosSemFiltroCarrossel, filtroCarrossel]);
+const turnosDisponiveis = useMemo(() => {
+  const lista = perdidosBase.filter((s) => !filtroCarrossel || s.carrossel === filtroCarrossel);
+  return Array.from(new Set(lista.map((s) => s.turno))).sort();
+}, [perdidosBase, filtroCarrossel]);
+
+const filtrados = useMemo(() => {
+  return perdidosBase.filter((s) => {
+    if (filtroCarrossel && s.carrossel !== filtroCarrossel) return false;
+    if (filtroTurno && s.turno !== filtroTurno) return false;
+    return true;
+  });
+}, [perdidosBase, filtroCarrossel, filtroTurno]);
 
   const totalPerdidos = filtrados.length;
 
@@ -74,7 +76,7 @@ export default function PerdidosPage() {
         carrosseis={carrosseis}
         turno={filtroTurno}
         onTurnoChange={setFiltroTurno}
-        turnos={turnos}
+        turnos={turnosDisponiveis}
       />
 
       {erro && (
