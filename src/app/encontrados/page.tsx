@@ -11,21 +11,26 @@ export default function EncontradosPage() {
   const [busca, setBusca] = useState('')
   const [filtroData, setFiltroData] = useState('');
   const [filtroCarrossel, setFiltroCarrossel] = useState('');
-
+  const [filtroTurno, setFiltroTurno] = useState('')
+  
   const encontrados = useMemo(() => sacos.filter((s) => s.status === 'encontrado'), [sacos]);
-
+  
+  const turnos = ['1', '2', '3']
+  
   const encontradosSemFiltroCarrossel = useMemo(()=> {
     return encontrados.filter((s) => {
       if (busca && !s.numero.includes(busca)) return false
       if (filtroData && s.data !== filtroData) return false
+      if (filtroTurno && s.turno !== filtroTurno) return false
       return true
     })
-  }, [encontrados, busca, filtroData])
-
+  }, [encontrados, busca, filtroData, filtroTurno])
+  
   const carrosseis = useMemo(
     () => Array.from(new Set(encontradosSemFiltroCarrossel.map((s) => s.carrossel))).sort(),
     [encontradosSemFiltroCarrossel]
   );
+
 
   const filtrados = useMemo(() => {
     return encontradosSemFiltroCarrossel.filter((s) => {
@@ -55,6 +60,9 @@ export default function EncontradosPage() {
         carrossel={filtroCarrossel}
         onCarrosselChange={setFiltroCarrossel}
         carrosseis={carrosseis}
+        turno={filtroTurno}
+        onTurnoChange={setFiltroTurno}
+        turnos={turnos}
       />
 
       {erro && <p className="text-sm text-alert">{erro}</p>}
