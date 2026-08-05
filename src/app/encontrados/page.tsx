@@ -14,30 +14,32 @@ export default function EncontradosPage() {
   const [filtroTurno, setFiltroTurno] = useState('')
   
   const encontrados = useMemo(() => sacos.filter((s) => s.status === 'encontrado'), [sacos]);
-  
-  const turnos = ['1', '2', '3']
-  
-  const encontradosSemFiltroCarrossel = useMemo(()=> {
+    
+  const encontradosBase = useMemo(()=> {
     return encontrados.filter((s) => {
       if (busca && !s.numero.includes(busca)) return false
       if (filtroData && s.data !== filtroData) return false
+      return true
+    })
+  }, [encontrados, busca, filtroData])
+  
+  const carrosseis = useMemo( () => {
+    const lista = encontradosBase.filter((s) => !filtroTurno || s.turno === filtroTurno);
+    return Array.from(new Set(lista.map((s) => s.carrossel))).sort();
+  }, [encontradosBase, filtroTurno]);
+
+  const turnosDisponiveis = useMemo(()=> {
+    const lista = encontradosBase.filter((s) => !filtroCarrossel || s.carrossel === filtroCarrossel);
+    return Array.from(new Set(lista.map((s) => s.turno))).sort()
+  }, [encontradosBase, filtroCarrossel])
+
+  const filtrados = useMemo(() => {
+    return encontradosBase.filter((s) => {
+      if (filtroCarrossel && s.carrossel !== filtroCarrossel) return false
       if (filtroTurno && s.turno !== filtroTurno) return false
       return true
     })
-  }, [encontrados, busca, filtroData, filtroTurno])
-  
-  const carrosseis = useMemo(
-    () => Array.from(new Set(encontradosSemFiltroCarrossel.map((s) => s.carrossel))).sort(),
-    [encontradosSemFiltroCarrossel]
-  );
-
-
-  const filtrados = useMemo(() => {
-    return encontradosSemFiltroCarrossel.filter((s) => {
-      if (filtroCarrossel && s.carrossel !== filtroCarrossel) return false
-      return true
-    })
-  }, [encontradosSemFiltroCarrossel, filtroCarrossel]);
+  }, [encontradosBase, filtroCarrossel, filtroTurno]);
 
   const totalEncontrados = filtrados.length;
 
@@ -62,7 +64,7 @@ export default function EncontradosPage() {
         carrosseis={carrosseis}
         turno={filtroTurno}
         onTurnoChange={setFiltroTurno}
-        turnos={turnos}
+        turnos={turnosDisponiveis}
       />
 
       {erro && <p className="text-sm text-alert">{erro}</p>}
