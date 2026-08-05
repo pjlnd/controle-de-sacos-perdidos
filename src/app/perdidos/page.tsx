@@ -13,21 +13,26 @@ export default function PerdidosPage() {
   const [busca, setBusca] = useState('');
   const [filtroData, setFiltroData] = useState('');
   const [filtroCarrossel, setFiltroCarrossel] = useState('');
+  const [filtroTurno, setFiltroTurno] = useState('');
 
   const perdidos = useMemo(() => sacos.filter((s) => s.status === 'perdido'), [sacos]);
-
+  
+  const turnos = ['1', '2', '3']
+  
   const perdidosSemFiltroCarrossel = useMemo(() => {
     return perdidos.filter((s) => {
       if (busca && !s.numero.includes(busca)) return false
       if (filtroData && s.data !== filtroData) return false
+      if (filtroTurno && s.turno !== filtroTurno) return false
       return true
     })
-  }, [perdidos, busca, filtroData])
+  }, [perdidos, busca, filtroData, filtroTurno])
 
   const carrosseis = useMemo(
     () => Array.from(new Set(perdidosSemFiltroCarrossel.map((s) => s.carrossel))).sort(),
     [perdidosSemFiltroCarrossel]
   );
+
 
   const filtrados = useMemo(() => {
     return perdidosSemFiltroCarrossel.filter((s) => {
@@ -67,6 +72,9 @@ export default function PerdidosPage() {
         carrossel={filtroCarrossel}
         onCarrosselChange={setFiltroCarrossel}
         carrosseis={carrosseis}
+        turno={filtroTurno}
+        onTurnoChange={setFiltroTurno}
+        turnos={turnos}
       />
 
       {erro && (

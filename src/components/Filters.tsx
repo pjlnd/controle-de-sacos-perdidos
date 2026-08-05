@@ -13,6 +13,9 @@ interface FiltrosBarraProps {
   carrossel: string;
   onCarrosselChange: (v: string) => void;
   carrosseis: string[];
+  turno: string;
+  onTurnoChange: (v: string) => void;
+  turnos: string[];
 }
 
 export default function FiltrosBarra({
@@ -25,6 +28,9 @@ export default function FiltrosBarra({
   carrossel,
   onCarrosselChange,
   carrosseis,
+  turno,
+  onTurnoChange,
+  turnos
 }: FiltrosBarraProps) {
   return (
     <div className="flex flex-wrap gap-2 sm:gap-3">
@@ -72,7 +78,21 @@ export default function FiltrosBarra({
         ))}
       </select>
 
-      {(data || cor || carrossel || busca) && (
+      <select
+        aria-label="Filtrar por turno"
+        value={turno}
+        onChange={(e) => onTurnoChange(e.target.value)}
+        className={`${inputBase} w-full sm:w-auto`}
+      >
+        <option value="">Todos os turnos</option>
+        {turnos.map((t) => (
+          <option key={t} value={t}>
+            {t}º turno
+          </option>
+        ))}
+      </select>
+
+      {(data || cor || carrossel || busca || turno) && (
         <button
           type="button"
           onClick={() => {
@@ -80,6 +100,7 @@ export default function FiltrosBarra({
             onDataChange('');
             onCorChange?.('');
             onCarrosselChange('');
+            onTurnoChange('');
           }}
           className="rounded-md px-3 py-2 text-sm text-inkfaded underline underline-offset-2 hover:text-ink"
         >
