@@ -15,44 +15,54 @@ export default function PerdidosPage() {
   const [filtroData, setFiltroData] = useState('');
   const [filtroCarrossel, setFiltroCarrossel] = useState('');
   const [filtroTurno, setFiltroTurno] = useState('');
-  const [mostrarToast, setMostrarToast] = useState(false);
+  const [toast, setToast] = useState<{ mensagem: string; variante: 'sucesso' | 'perigo' } | null>(null);
   const [toastKey, setToastKey] = useState(0);
+
+  function dispararToast(mensagem: string, variante: 'sucesso' | 'perigo' = 'sucesso') {
+    setToast({ mensagem, variante })
+    setToastKey((k) => k + 1)
+  }
+
+  function handleEncontrado(id: string) {
+    marcarEncontrado(id)
+    dispararToast('Saco encontrado!')
+  }
+
+  function handleExcluir(id: string) {
+    excluirSaco(id)
+    dispararToast('Registro exlcuido', 'perigo')
+  }
 
   const perdidos = useMemo(() => sacos.filter((s) => s.status === 'perdido'), [sacos]);
 
-const perdidosBase = useMemo(() => {
-  return perdidos.filter((s) => {
-    if (busca && !s.numero.includes(busca)) return false;
-    if (filtroData && s.data !== filtroData) return false;
-    return true;
-  });
-}, [perdidos, busca, filtroData]);
+  const perdidosBase = useMemo(() => {
+    return perdidos.filter((s) => {
+      if (busca && !s.numero.includes(busca)) return false;
+      if (filtroData && s.data !== filtroData) return false;
+      return true;
+    });
+  }, [perdidos, busca, filtroData]);
 
-const carrosseis = useMemo(() => {
-  const lista = perdidosBase.filter((s) => !filtroTurno || s.turno === filtroTurno);
-  return Array.from(new Set(lista.map((s) => s.carrossel))).sort();
-}, [perdidosBase, filtroTurno]);
+  const carrosseis = useMemo(() => {
+    const lista = perdidosBase.filter((s) => !filtroTurno || s.turno === filtroTurno);
+    return Array.from(new Set(lista.map((s) => s.carrossel))).sort();
+  }, [perdidosBase, filtroTurno]);
 
-const turnosDisponiveis = useMemo(() => {
-  const lista = perdidosBase.filter((s) => !filtroCarrossel || s.carrossel === filtroCarrossel);
-  return Array.from(new Set(lista.map((s) => s.turno))).sort();
-}, [perdidosBase, filtroCarrossel]);
+  const turnosDisponiveis = useMemo(() => {
+    const lista = perdidosBase.filter((s) => !filtroCarrossel || s.carrossel === filtroCarrossel);
+    return Array.from(new Set(lista.map((s) => s.turno))).sort();
+  }, [perdidosBase, filtroCarrossel]);
 
-const filtrados = useMemo(() => {
-  return perdidosBase.filter((s) => {
-    if (filtroCarrossel && s.carrossel !== filtroCarrossel) return false;
-    if (filtroTurno && s.turno !== filtroTurno) return false;
-    return true;
-  });
-}, [perdidosBase, filtroCarrossel, filtroTurno]);
+  const filtrados = useMemo(() => {
+    return perdidosBase.filter((s) => {
+      if (filtroCarrossel && s.carrossel !== filtroCarrossel) return false;
+      if (filtroTurno && s.turno !== filtroTurno) return false;
+      return true;
+    });
+  }, [perdidosBase, filtroCarrossel, filtroTurno]);
 
   const totalPerdidos = filtrados.length;
 
-  function handleEncontrado(id: string) {
-    marcarEncontrado(id);
-    setToastKey((k) => k + 1);
-    setMostrarToast(true);
-  }
 
   return (
     <div className="flex flex-col gap-5">
@@ -101,7 +111,7 @@ const filtrados = useMemo(() => {
       ) : (
         <div className="flex flex-col gap-3">
           {filtrados.map((saco) => (
-            <SacoTag key={saco.id} saco={saco} onEncontrado={handleEncontrado} onExcluir={excluirSaco}/>
+            <SacoTag key={saco.id} saco={saco} onEncontrado={handleEncontrado} onExcluir={handleExcluir} />
           ))}
         </div>
       )}
@@ -110,11 +120,12 @@ const filtrados = useMemo(() => {
         <SacoModal onFechar={() => setModalAberto(false)} onSalvar={criarSaco} />
       )}
 
-      {mostrarToast && (
+      {toast && (
         <Toast
-        key={toastKey}
-        mensagem="Saco encontrado"
-        onFechar={() => setMostrarToast(false)}
+          key={toastKey}
+          mensagem={toast.mensagem}
+          variante={toast.variante}
+          onFechar={() => setToast(null)}
         />
       )}
     </div>
