@@ -1,16 +1,18 @@
 'use client';
 
-import Toast from '@/components/Toast';
 import { useMemo, useState } from 'react';
 import { useSacos } from '@/hooks/useSacos';
 import SacoTag from '@/components/SacoTag';
 import SacoModal from '@/components/SacoModal';
 import FiltrosBarra from '@/components/Filters';
 import EmptyState from '@/components/EmptyState';
+import Toast from '@/components/Toast';
+import type { EditarSacoInput, SacoFlat } from '@/lib/types';
 
 export default function PerdidosPage() {
-  const { sacos, carregando, erro, criarSaco, marcarEncontrado, excluirSaco } = useSacos();
+  const { sacos, carregando, erro, criarSaco, editarSaco, marcarEncontrado, excluirSaco } = useSacos();
   const [modalAberto, setModalAberto] = useState(false);
+  const [sacoEditando, setSacoEditando] = useState<SacoFlat | null>(null);
   const [busca, setBusca] = useState('');
   const [filtroData, setFiltroData] = useState('');
   const [filtroCarrossel, setFiltroCarrossel] = useState('');
@@ -19,18 +21,23 @@ export default function PerdidosPage() {
   const [toastKey, setToastKey] = useState(0);
 
   function dispararToast(mensagem: string, variante: 'sucesso' | 'perigo' = 'sucesso') {
-    setToast({ mensagem, variante })
-    setToastKey((k) => k + 1)
+    setToast({ mensagem, variante });
+    setToastKey((k) => k + 1);
   }
 
   function handleEncontrado(id: string) {
-    marcarEncontrado(id)
-    dispararToast('Saco encontrado!')
+    marcarEncontrado(id);
+    dispararToast('Saco encontrado');
   }
 
   function handleExcluir(id: string) {
-    excluirSaco(id)
-    dispararToast('Registro exlcuido', 'perigo')
+    excluirSaco(id);
+    dispararToast('Registro excluído', 'perigo');
+  }
+
+  async function handleSalvarEdicao(id: string, input: EditarSacoInput) {
+    await editarSaco(id, input);
+    dispararToast('Registro atualizado');
   }
 
   const perdidos = useMemo(() => sacos.filter((s) => s.status === 'perdido'), [sacos]);
@@ -62,7 +69,6 @@ export default function PerdidosPage() {
   }, [perdidosBase, filtroCarrossel, filtroTurno]);
 
   const totalPerdidos = filtrados.length;
-
 
   return (
     <div className="flex flex-col gap-5">
@@ -111,13 +117,27 @@ export default function PerdidosPage() {
       ) : (
         <div className="flex flex-col gap-3">
           {filtrados.map((saco) => (
-            <SacoTag key={saco.id} saco={saco} onEncontrado={handleEncontrado} onExcluir={handleExcluir} />
+            <SacoTag
+              key={saco.id}
+              saco={saco}
+              onEncontrado={handleEncontrado}
+              onExcluir={handleExcluir}
+              onEditar={setSacoEditando}
+            />
           ))}
         </div>
       )}
 
       {modalAberto && (
-        <SacoModal onFechar={() => setModalAberto(false)} onSalvar={criarSaco} />
+        <SacoModal onFechar={() => setModalAberto(false)} onCriar={criarSaco} />
+      )}
+
+      {sacoEditando && (
+        <SacoModal
+          onFechar={() => setSacoEditando(null)}
+          sacoParaEditar={sacoEditando}
+          onEditar={handleSalvarEdicao}
+        />
       )}
 
       {toast && (

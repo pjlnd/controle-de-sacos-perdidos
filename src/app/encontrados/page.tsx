@@ -6,21 +6,34 @@ import SacoTag from '@/components/SacoTag';
 import FiltrosBarra from '@/components/Filters';
 import EmptyState from '@/components/EmptyState';
 import Toast from '@/components/Toast';
+import SacoModal from '@/components/SacoModal';
+import type { EditarSacoInput, SacoFlat } from '@/lib/types';
 
 export default function EncontradosPage() {
-  const { sacos, carregando, erro, excluirSaco } = useSacos();
+  const { sacos, carregando, erro, editarSaco, excluirSaco } = useSacos();
   const [busca, setBusca] = useState('')
   const [filtroData, setFiltroData] = useState('');
   const [filtroCarrossel, setFiltroCarrossel] = useState('');
   const [filtroTurno, setFiltroTurno] = useState('');
   const [toast, setToast] = useState<{ mensagem: string; variante: 'sucesso' | 'perigo' } | null>(null);
 const [toastKey, setToastKey] = useState(0);
+const [sacoEditando, setSacoEditando] =useState<SacoFlat | null>(null);
+
+function dispararToast(mensagem: string, variante: 'sucesso' | 'perigo' = 'sucesso') {
+    setToast({ mensagem, variante });
+    setToastKey((k) => k + 1);
+  }
 
 function handleExcluir(id: string) {
   excluirSaco(id);
   setToast({ mensagem: 'Registro excluído', variante: 'perigo' });
   setToastKey((k) => k + 1);
 }
+
+async function handleSalvarEdicao(id: string, input: EditarSacoInput) {
+    await editarSaco(id, input);
+    dispararToast('Registro atualizado');
+  }
   
   const encontrados = useMemo(() => sacos.filter((s) => s.status === 'encontrado'), [sacos]);
     
@@ -87,9 +100,17 @@ function handleExcluir(id: string) {
       ) : (
         <div className="flex flex-col gap-3">
           {filtrados.map((saco) => (
-            <SacoTag key={saco.id} saco={saco} onExcluir={handleExcluir}/>
+            <SacoTag key={saco.id} saco={saco} onExcluir={handleExcluir} onEditar={setSacoEditando}/>
           ))}
         </div>
+      )}
+
+      {sacoEditando && (
+        <SacoModal
+          onFechar={() => setSacoEditando(null)}
+          sacoParaEditar={sacoEditando}
+          onEditar={handleSalvarEdicao}
+        />
       )}
 
       {toast && (

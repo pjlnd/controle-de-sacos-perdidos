@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { NovoSacoInput, SacoFlat, } from '@/lib/types';
+import type { NovoSacoInput, SacoFlat, EditarSacoInput } from '@/lib/types';
 
 const INTERVALO_POLLING_MS = 3000;
 
@@ -49,6 +49,19 @@ export function useSacos() {
     },
     []
   );
+  
+  const editarSaco = useCallback(async (id: string, input: EditarSacoInput) => {
+    const res = await fetch(`/api/sacos/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(input),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data?.erro ?? 'Erro ao editar saco.');
+    }
+    setSacos(data as SacoFlat[]);
+  }, []);
 
   const marcarEncontrado = useCallback(async (id: string) => {
     setSacos((atual) =>
@@ -82,5 +95,5 @@ export function useSacos() {
   }
 }, [buscar]);
 
-  return { sacos, carregando, erro, criarSaco, marcarEncontrado, excluirSaco, recarregar: buscar };
+  return { sacos, carregando, erro, criarSaco, marcarEncontrado, excluirSaco, recarregar: buscar, editarSaco };
 }
