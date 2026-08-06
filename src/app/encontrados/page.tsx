@@ -5,13 +5,22 @@ import { useSacos } from '@/hooks/useSacos';
 import SacoTag from '@/components/SacoTag';
 import FiltrosBarra from '@/components/Filters';
 import EmptyState from '@/components/EmptyState';
+import Toast from '@/components/Toast';
 
 export default function EncontradosPage() {
   const { sacos, carregando, erro, excluirSaco } = useSacos();
   const [busca, setBusca] = useState('')
   const [filtroData, setFiltroData] = useState('');
   const [filtroCarrossel, setFiltroCarrossel] = useState('');
-  const [filtroTurno, setFiltroTurno] = useState('')
+  const [filtroTurno, setFiltroTurno] = useState('');
+  const [toast, setToast] = useState<{ mensagem: string; variante: 'sucesso' | 'perigo' } | null>(null);
+const [toastKey, setToastKey] = useState(0);
+
+function handleExcluir(id: string) {
+  excluirSaco(id);
+  setToast({ mensagem: 'Registro excluído', variante: 'perigo' });
+  setToastKey((k) => k + 1);
+}
   
   const encontrados = useMemo(() => sacos.filter((s) => s.status === 'encontrado'), [sacos]);
     
@@ -78,9 +87,18 @@ export default function EncontradosPage() {
       ) : (
         <div className="flex flex-col gap-3">
           {filtrados.map((saco) => (
-            <SacoTag key={saco.id} saco={saco} onExcluir={excluirSaco}/>
+            <SacoTag key={saco.id} saco={saco} onExcluir={handleExcluir}/>
           ))}
         </div>
+      )}
+
+      {toast && (
+        <Toast
+          key={toastKey}
+          mensagem={toast.mensagem}
+          variante={toast.variante}
+          onFechar={() => setToast(null)}
+        />
       )}
     </div>
   );
