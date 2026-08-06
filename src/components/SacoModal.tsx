@@ -1,10 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import type { NovoSacoInput, Turno } from '@/lib/types';
+import type { EditarSacoInput, NovoSacoInput, SacoFlat, Turno } from '@/lib/types';
 import { CARROSSEIS, totalPrateleiras } from '@/lib/carrosseis';
-
-// const CARROSSEIS = Array.from({ length: 13 }, (_, i) => `C${String(i + 1).padStart(2, '0')}`);
 
 function hoje(): string {
   const d = new Date();
@@ -14,34 +12,55 @@ function hoje(): string {
   return `${ano}-${mes}-${dia}`;
 }
 
-const estadoInicial: NovoSacoInput = {
-  numero: '',
-  artigo: '',
-  cor: '',
-  tamanho: '',
-  turno: '1',
-  data: hoje(),
-  carrossel: 'C01',
-  retiradoPeloSistema: false,
-  armazem: '',
-  prateleira: '',
-};
+function estadoInicial(saco?: SacoFlat): EditarSacoInput {
+  if (saco) {
+    return {
+      numero: saco.numero,
+      artigo: saco.artigo,
+      cor: saco.cor,
+      tamanho: saco.tamanho,
+      turno: saco.turno,
+      data: saco.data,
+      carrossel: saco.carrossel,
+      retiradoPeloSistema: saco.retiradoPeloSistema,
+      armazem: saco.armazem ?? '',
+      prateleira: saco.prateleira ?? '',
+      status: saco.status,
+    };
+  }
+  return {
+    numero: '',
+    artigo: '',
+    cor: '',
+    tamanho: '',
+    turno: '1',
+    data: hoje(),
+    carrossel: 'C01',
+    retiradoPeloSistema: false,
+    armazem: '',
+    prateleira: '',
+    status: 'perdido',
+  };
+}
 
 interface SacoModalProps {
   onFechar: () => void;
-  onSalvar: (input: NovoSacoInput) => Promise<void>;
+  sacoParaEditar?: SacoFlat;
+  onCriar?: (input: NovoSacoInput) => Promise<void>;
+  onEditar?: (id: string, input: EditarSacoInput) => Promise<void>;
 }
 
 const inputClass =
   'w-full rounded-md border border-ink/25 bg-white px-3 py-2 text-ink focus:border-ink';
 const labelClass = 'text-xs font-medium uppercase tracking-wide text-inkfaded';
 
-export default function SacoModal({ onFechar, onSalvar }: SacoModalProps) {
-  const [form, setForm] = useState<NovoSacoInput>(estadoInicial);
+export default function SacoModal({ onFechar, sacoParaEditar, onCriar, onEditar }: SacoModalProps) {
+  const modoEdicao = Boolean(sacoParaEditar);
+  const [form, setForm] = useState<EditarSacoInput>(() => estadoInicial(sacoParaEditar));
   const [erro, setErro] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
 
-  function atualizar<K extends keyof NovoSacoInput>(campo: K, valor: NovoSacoInput[K]) {
+  function atualizar<K extends keyof EditarSacoInput>(campo: K, valor: EditarSacoInput[K]) {
     setForm((f) => ({ ...f, [campo]: valor }));
   }
 
@@ -61,10 +80,9 @@ export default function SacoModal({ onFechar, onSalvar }: SacoModalProps) {
       setErro('A cor deve conter no máximo 8 caracteres, entre letras maiúsculas e números.');
       return;
     }
-    const tamanhoNum = Number(form.tamanho);
-    if (!form.tamanho || !Number.isInteger(tamanhoNum) || tamanhoNum < 32 || tamanhoNum > 50) {
-      setErro('O tamanho deve ser um número entre 32 e 50.');
-      return
+    if (!/^\d{1,2}$/.test(form.tamanho)) {
+      setErro('O tamanho deve ser numérico, com no máximo 2 dígitos.');
+      return;
     }
     if (!form.retiradoPeloSistema) {
       const armazemNum = Number(form.armazem);
@@ -87,13 +105,18 @@ export default function SacoModal({ onFechar, onSalvar }: SacoModalProps) {
 
     setEnviando(true);
     try {
-      const payload: NovoSacoInput = form.retiradoPeloSistema
+      const payload: EditarSacoInput = form.retiradoPeloSistema
         ? { ...form, armazem: undefined, prateleira: undefined }
         : form;
-      await onSalvar(payload);
+
+      if (modoEdicao && sacoParaEditar && onEditar) {
+        await onEditar(sacoParaEditar.id, payload);
+      } else if (onCriar) {
+        await onCriar(payload);
+      }
       onFechar();
     } catch (err) {
-      setErro(err instanceof Error ? err.message : 'Erro ao registrar saco.');
+      setErro(err instanceof Error ? err.message : 'Erro ao salvar saco.');
     } finally {
       setEnviando(false);
     }
@@ -110,7 +133,7 @@ export default function SacoModal({ onFechar, onSalvar }: SacoModalProps) {
       >
         <div className="mb-4 flex items-center justify-between">
           <h2 className="font-stencil text-xl uppercase tracking-wide">
-            Novo saco perdido
+            {modoEdicao ? 'Editar registro' : 'Novo saco perdido'}
           </h2>
           <button
             type="button"
@@ -124,7 +147,7 @@ export default function SacoModal({ onFechar, onSalvar }: SacoModalProps) {
 
         <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-3">
           <div className="col-span-2 sm:col-span-1">
-            <label className={labelClass}>Número do saco</label>
+            <label className={labelClass}>Número do saco (6 dígitos)</label>
             <input
               className={`${inputClass} font-mono`}
               value={form.numero}
@@ -136,34 +159,37 @@ export default function SacoModal({ onFechar, onSalvar }: SacoModalProps) {
           </div>
 
           <div className="col-span-2 sm:col-span-1">
-            <label className={labelClass}>Artigo</label>
+            <label className={labelClass}>Artigo (máx. 12 caracteres)</label>
             <input
               className={`${inputClass} font-mono uppercase`}
               value={form.artigo}
               onChange={(e) => atualizar('artigo', e.target.value.toUpperCase().slice(0, 12))}
+              maxLength={12}
               placeholder="Ex.: A2231B"
               required
             />
           </div>
 
           <div>
-            <label className={labelClass}>Cor</label>
+            <label className={labelClass}>Cor (máx. 8 caracteres)</label>
             <input
               className={`${inputClass} font-mono uppercase`}
               value={form.cor}
               onChange={(e) => atualizar('cor', e.target.value.toUpperCase().slice(0, 8))}
+              maxLength={8}
               placeholder="Ex.: AZ01"
               required
             />
           </div>
 
           <div>
-            <label className={labelClass}>Tamanho</label>
+            <label className={labelClass}>Tamanho (máx. 2 dígitos)</label>
             <input
               className={inputClass}
               value={form.tamanho}
               onChange={(e) => atualizar('tamanho', e.target.value.replace(/\D/g, '').slice(0, 2))}
               inputMode="numeric"
+              maxLength={2}
               placeholder="Ex.: 42"
               required
             />
@@ -252,7 +278,7 @@ export default function SacoModal({ onFechar, onSalvar }: SacoModalProps) {
           {!form.retiradoPeloSistema && (
             <>
               <div>
-                <label className={labelClass}>Armazém</label>
+                <label className={labelClass}>Armazém (1 a 72)</label>
                 <input
                   className={inputClass}
                   value={form.armazem ?? ''}
@@ -267,7 +293,7 @@ export default function SacoModal({ onFechar, onSalvar }: SacoModalProps) {
 
               <div className="col-span-2 sm:col-span-1">
                 <label className={labelClass}>
-                  Prateleira
+                  Prateleira (1 a {totalPrateleiras(form.carrossel)})
                 </label>
                 <select
                   className={inputClass}
@@ -285,6 +311,41 @@ export default function SacoModal({ onFechar, onSalvar }: SacoModalProps) {
                 </select>
               </div>
             </>
+          )}
+
+          {modoEdicao && (
+            <div className="col-span-2">
+              <label className={labelClass}>Status</label>
+              <div className="mt-1 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => atualizar('status', 'perdido')}
+                  className={`flex-1 rounded-md border px-3 py-2 text-sm font-medium transition-colors ${
+                    form.status === 'perdido'
+                      ? 'border-alert bg-alert text-white'
+                      : 'border-ink/25 bg-white text-inkfaded hover:bg-black/5'
+                  }`}
+                >
+                  Perdido
+                </button>
+                <button
+                  type="button"
+                  onClick={() => atualizar('status', 'encontrado')}
+                  className={`flex-1 rounded-md border px-3 py-2 text-sm font-medium transition-colors ${
+                    form.status === 'encontrado'
+                      ? 'border-found bg-found text-white'
+                      : 'border-ink/25 bg-white text-inkfaded hover:bg-black/5'
+                  }`}
+                >
+                  Encontrado
+                </button>
+              </div>
+              {sacoParaEditar?.status === 'encontrado' && form.status === 'perdido' && (
+                <p className="mt-1 text-xs text-inkfaded">
+                  Ao salvar, esse registro volta para a tela de Sacos Perdidos.
+                </p>
+              )}
+            </div>
           )}
 
           <div className="col-span-2">
@@ -315,7 +376,7 @@ export default function SacoModal({ onFechar, onSalvar }: SacoModalProps) {
               disabled={enviando}
               className="rounded-md bg-ink px-4 py-2 text-sm font-semibold text-kraft hover:bg-ink/90 disabled:opacity-60"
             >
-              {enviando ? 'Salvando...' : 'Concluir'}
+              {enviando ? 'Salvando...' : modoEdicao ? 'Salvar alterações' : 'Concluir'}
             </button>
           </div>
         </form>

@@ -1,6 +1,6 @@
 import { ObjectId } from 'mongodb';
 import clientPromise from './mongodb';
-import type { NovoSacoInput, SacoDados, SacoFlat, StatusSaco } from './types';
+import type { EditarSacoInput ,NovoSacoInput, SacoDados, SacoFlat, StatusSaco } from './types';
 
 const NOME_BANCO = 'registro_sacos';
 const NOME_COLECAO = 'sacos';
@@ -71,5 +71,54 @@ export async function excluirSaco(id: string): Promise<SacoFlat[] | null> {
   const resultado = await colecao.deleteOne({ _id: new ObjectId(id) });
   if (resultado.deletedCount === 0) return null;
 
+  return lerSacos();
+}
+
+export async function editarSaco(
+  id: string,
+  input: EditarSacoInput
+): Promise<SacoFlat[] | null> {
+  if (!ObjectId.isValid(id)) return null;
+  const colecao = await colecaoSacos();
+
+  const sacoAtual = await colecao.findOne({ _id: new ObjectId(id) });
+  if (!sacoAtual) return null;
+
+  const camposBase: Partial<SacoDados> = {
+    numero: input.numero,
+    artigo: input.artigo.toUpperCase(),
+    cor: input.cor.toUpperCase(),
+    tamanho: input.tamanho,
+    turno: input.turno,
+    data: input.data,
+    carrossel: input.carrossel,
+    retiradoPeloSistema: input.retiradoPeloSistema,
+    status: input.status,
+  };
+
+  const set: Partial<SacoDados> = { ...camposBase };
+  const unset: Record<string, ''> = {};
+
+  if (input.retiradoPeloSistema) {
+    unset.armazem = '';
+    unset.prateleira = '';
+  } else {
+    set.armazem = input.armazem;
+    set.prateleira = input.prateleira;
+  }
+
+  if (input.status === 'encontrado' && sacoAtual.status !== 'encontrado') {
+    // Só voltou a ser "encontrado" agora -- registra o momento.
+    set.encontradoEm = new Date().toISOString();
+  } else if (input.status === 'perdido') {
+    unset.encontradoEm = '';
+  }
+
+  const resultado = await colecao.updateOne(
+    { _id: new ObjectId(id) },
+    { $set: set, ...(Object.keys(unset).length > 0 ? { $unset: unset } : {}) }
+  );
+
+  if (resultado.matchedCount === 0) return null;
   return lerSacos();
 }

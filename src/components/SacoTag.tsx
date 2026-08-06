@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import type { SacoFlat } from '@/lib/types';
 import ConfirmDialog from './ConfirmDialog';
+import SacoMenu from './SacoMenu';
+import { podeEditar as calcularPodeEditar } from '@/lib/prazoEdicao';
 
 function formatarData(iso: string): string {
   const [ano, mes, dia] = iso.split('-');
@@ -13,9 +15,10 @@ interface SacoTagProps {
   saco: SacoFlat;
   onEncontrado?: (id: string) => void;
   onExcluir?: (id: string) => void;
+  onEditar?: (saco: SacoFlat) => void;
 }
 
-export default function SacoTag({ saco, onEncontrado, onExcluir }: SacoTagProps) {
+export default function SacoTag({ saco, onEncontrado, onExcluir, onEditar }: SacoTagProps) {
   const [confirmando, setConfirmando] = useState(false);
   return (
     <div className="tag-card flex flex-col gap-3 p-4 pl-7 sm:flex-row sm:items-center sm:justify-between">
@@ -103,24 +106,12 @@ export default function SacoTag({ saco, onEncontrado, onExcluir }: SacoTagProps)
         </span>
       )}
 
-      {onExcluir && (
-        <button
-          type='button'
-          onClick={() => { setConfirmando(true) }}
-          aria-label="Excluir registro"
-          title="Excluir registro"
-          className="flex h-10 w-10 items-center justify-center rounded-md border border-alert/40 text-alert transition-colors hover:bg-alert hover:text-white"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path
-              d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m2 0v13a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V7h10Z"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </button>
+      {(onExcluir || onEditar) && (
+        <SacoMenu
+          podeEditar={calcularPodeEditar(saco.criadoEm)}
+          onEditar={() => onEditar?.(saco)}
+          onExcluir={() => setConfirmando(true)}
+        />
       )}
 
       {confirmando && onExcluir && (

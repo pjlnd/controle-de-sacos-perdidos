@@ -33,3 +33,5 @@ export type NovoSacoInput = Omit<
   SacoDados,
   'motivo' | 'status' | 'criadoEm' | 'encontradoEm'
 >;
+
+export type EditarSacoInput = NovoSacoInput & { status: StatusSaco }
