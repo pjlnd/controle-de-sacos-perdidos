@@ -1,6 +1,27 @@
 export type Turno = '1' | '2' | '3';
 export type StatusSaco = 'perdido' | 'encontrado';
 
+export type TipoUsuario = 'admin' | 'operario';
+export type StatusUsuario = 'ativo' | 'inativo'
+
+export interface UsuarioDados {
+  matricula: string // até 9 dígitos, apenas números
+  nome: string
+  tipo: TipoUsuario
+  status: StatusUsuario
+  criadoEm: string // ISO timestamp
+}
+
+export interface UsuarioFlat extends UsuarioDados {
+  id: string
+}
+
+export interface NovoUsuarioInput {
+  matricula: string
+  nome: string
+  tipo: TipoUsuario
+}
+
 // Código do carrossel, sempre "C01" até "C13"
 export type CarrosselId = string;
 
