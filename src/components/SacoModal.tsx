@@ -76,7 +76,7 @@ export default function SacoModal({ onFechar, sacoParaEditar, onCriar, onEditar 
       setErro('O artigo deve conter no máximo 12 caracteres, entre letras maiúsculas e números.');
       return;
     }
-    if (!/^[A-Z0-9]{1,8}$/.test(form.cor)) {
+    if (!/^[A-Z0-9/-]{1,8}$/.test(form.cor)) {
       setErro('A cor deve conter no máximo 8 caracteres, entre letras maiúsculas e números.');
       return;
     }
@@ -147,7 +147,7 @@ export default function SacoModal({ onFechar, sacoParaEditar, onCriar, onEditar 
 
         <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-3">
           <div className="col-span-2 sm:col-span-1">
-            <label className={labelClass}>Número do saco (6 dígitos)</label>
+            <label className={labelClass}>Número do saco</label>
             <input
               className={`${inputClass} font-mono`}
               value={form.numero}
@@ -159,7 +159,7 @@ export default function SacoModal({ onFechar, sacoParaEditar, onCriar, onEditar 
           </div>
 
           <div className="col-span-2 sm:col-span-1">
-            <label className={labelClass}>Artigo (máx. 12 caracteres)</label>
+            <label className={labelClass}>Artigo</label>
             <input
               className={`${inputClass} font-mono uppercase`}
               value={form.artigo}
@@ -171,11 +171,11 @@ export default function SacoModal({ onFechar, sacoParaEditar, onCriar, onEditar 
           </div>
 
           <div>
-            <label className={labelClass}>Cor (máx. 8 caracteres)</label>
+            <label className={labelClass}>Cor</label>
             <input
               className={`${inputClass} font-mono uppercase`}
               value={form.cor}
-              onChange={(e) => atualizar('cor', e.target.value.toUpperCase().slice(0, 8))}
+              onChange={(e) => atualizar('cor', e.target.value.toUpperCase().replace(/[^A-Z0-9/-]/g, '').slice(0, 8))}
               maxLength={8}
               placeholder="Ex.: AZ01"
               required
@@ -183,7 +183,7 @@ export default function SacoModal({ onFechar, sacoParaEditar, onCriar, onEditar 
           </div>
 
           <div>
-            <label className={labelClass}>Tamanho (máx. 2 dígitos)</label>
+            <label className={labelClass}>Tamanho</label>
             <input
               className={inputClass}
               value={form.tamanho}
@@ -278,7 +278,7 @@ export default function SacoModal({ onFechar, sacoParaEditar, onCriar, onEditar 
           {!form.retiradoPeloSistema && (
             <>
               <div>
-                <label className={labelClass}>Armazém (1 a 72)</label>
+                <label className={labelClass}>Armazém</label>
                 <input
                   className={inputClass}
                   value={form.armazem ?? ''}

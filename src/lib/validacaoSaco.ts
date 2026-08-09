@@ -8,7 +8,7 @@ export function validarCamposSaco(input: Partial<NovoSacoInput>): string | null 
   if (!input.artigo || !/^[A-Z0-9]{1,12}$/.test(input.artigo)) {
     return 'Artigo deve conter no máximo 12 caracteres, entre letras maiúsculas e números.';
   }
-  if (!input.cor || !/^[A-Z0-9]{1,8}$/.test(input.cor)) {
+  if (!input.cor || !/^[A-Z0-9/-]{1,8}$/.test(input.cor)) {
     return 'Cor deve conter no máximo 8 caracteres, entre letras maiúsculas e números.';
   }
   if (!input.tamanho || !/^\d{1,2}$/.test(input.tamanho)) {
