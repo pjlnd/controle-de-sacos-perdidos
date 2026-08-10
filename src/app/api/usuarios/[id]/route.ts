@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { alternarStatusUsuario, editarNomeUsuario, mudarTipoUsuario } from '@/lib/usuarios';
+import { respostaNaoAutorizado, respostaSemPermissao, usuarioAutenticado } from '@/lib/autenticacao';
 
 export const dynamic = 'force-dynamic';
 
@@ -7,6 +8,10 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const usuarioLogado = await usuarioAutenticado()
+  if (!usuarioLogado) return respostaNaoAutorizado()
+  if (usuarioLogado.tipo !== 'admin') return respostaSemPermissao()
+
   const body = await req.json();
 
   try {
