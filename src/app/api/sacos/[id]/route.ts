@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { atualizarStatusSaco, editarSaco, excluirSaco, lerSacos } from '@/lib/db';
 import { podeEditar } from '@/lib/prazoEdicao';
 import { validarCamposSaco } from '@/lib/validacaoSaco';
+import { respostaNaoAutorizado, usuarioAutenticado } from '@/lib/autenticacao';
 import type { EditarSacoInput } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
@@ -10,6 +11,9 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const usuario = usuarioAutenticado();
+  if (!usuario) return respostaNaoAutorizado();
+
   const body = await req.json();
 
   // Edição completa (vinda do modal) -- identificada pela presença do campo "numero"
@@ -61,6 +65,9 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const usuario = usuarioAutenticado();
+  if (!usuario) return respostaNaoAutorizado();
+
   const sacos = await excluirSaco(params.id);
   if (!sacos) {
     return NextResponse.json({ erro: 'Saco não encontrado.' }, { status: 404 });
