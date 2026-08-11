@@ -80,8 +80,9 @@ export default function SacoModal({ onFechar, sacoParaEditar, onCriar, onEditar 
       setErro('A cor deve conter no máximo 8 caracteres, entre letras maiúsculas e números.');
       return;
     }
-    if (!/^\d{1,2}$/.test(form.tamanho)) {
-      setErro('O tamanho deve ser numérico, com no máximo 2 dígitos.');
+    const tamanhoNum = Number(form.tamanho);
+    if (!form.tamanho || !Number.isInteger(tamanhoNum) || tamanhoNum < 32 || tamanhoNum > 50) {
+      setErro('O tamanho deve ser numérico, com no máximo 2 dígitos, maior que 32 e menor que 50.');
       return;
     }
     if (!form.retiradoPeloSistema) {
