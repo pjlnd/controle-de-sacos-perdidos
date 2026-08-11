@@ -13,12 +13,13 @@ function formatarData(iso: string): string {
 
 interface SacoTagProps {
   saco: SacoFlat;
+  tipo: 'perdido' | 'encontrado'
   onEncontrado?: (id: string) => void;
   onExcluir?: (id: string) => void;
   onEditar?: (saco: SacoFlat) => void;
 }
 
-export default function SacoTag({ saco, onEncontrado, onExcluir, onEditar }: SacoTagProps) {
+export default function SacoTag({ saco, tipo, onEncontrado, onExcluir, onEditar }: SacoTagProps) {
   const [confirmando, setConfirmando] = useState(false);
   return (
     <div className="tag-card flex flex-col gap-3 p-4 pl-7 sm:flex-row sm:items-center sm:justify-between">
@@ -101,8 +102,13 @@ export default function SacoTag({ saco, onEncontrado, onExcluir, onEditar }: Sac
           Marcar como encontrado
         </button>
       ) : (
-        <span className="stamp shrink-0 self-start rounded border-2 border-found px-3 py-1.5 text-sm font-bold uppercase text-found sm:self-center">
-          Encontrado
+        <span className={`stamp shrink-0 self-start rounded border-2 border-found px-3 py-1.5 text-sm font-bold uppercase text-found sm:self-center ${
+          tipo === 'perdido'
+          ? 'border-red-500 text-red-500'
+          : 'border-found text-found'
+        }`}
+        >
+          {tipo === 'perdido' ? 'Perdido' : 'Encontrado'}
         </span>
       )}
 
