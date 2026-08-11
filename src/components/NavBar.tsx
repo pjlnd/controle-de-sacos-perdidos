@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useSessao } from '@/contexts/SessaoContext';
 
-const abas = [
+const abasBase = [
   { href: '/perdidos', label: 'Perdidos' },
   { href: '/encontrados', label: 'Encontrados' },
 ];
@@ -13,6 +13,11 @@ export default function NavBar() {
   const pathname = usePathname();
   const router = useRouter();
   const { sessao, carregando, logout } = useSessao();
+
+  const abas = 
+    sessao.tipo === 'admin'
+      ? [...abasBase, { href: '/admin', label: 'Usuários' }]
+      : abasBase;
 
   async function handleLogout() {
     await logout();

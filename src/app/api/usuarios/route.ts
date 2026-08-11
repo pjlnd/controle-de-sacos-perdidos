@@ -3,6 +3,7 @@ import { criarUsuario, listarUsuarios } from '@/lib/usuarios';
 import { validarNovoUsuario } from '@/lib/validacaoUsuario';
 import { respostaNaoAutorizado, respostaSemPermissao, usuarioAutenticado } from '@/lib/autenticacao';
 import type { NovoUsuarioInput } from '@/lib/types';
+import { ehMatriculaProtegida } from '@/lib/protecaoAdmin';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,7 +13,11 @@ export async function GET() {
   if (usuario.tipo !== 'admin') return respostaSemPermissao();
 
   const usuarios = await listarUsuarios();
-  return NextResponse.json(usuarios);
+  const usuarioComProtecao = usuarios.map((u) => ({
+    ...u,
+    protegido: ehMatriculaProtegida(u.matricula)
+  }))
+  return NextResponse.json(usuarioComProtecao);
 }
 
 export async function POST(req: NextRequest) {

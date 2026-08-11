@@ -1,5 +1,6 @@
 import { ObjectId, Collection } from 'mongodb';
 import clientPromise from './mongodb';
+import { ehMatriculaProtegida } from './protecaoAdmin';
 import type {
   NovoUsuarioInput,
   StatusUsuario,
@@ -76,6 +77,10 @@ export async function alternarStatusUsuario(
   const usuario = await colecao.findOne({ _id: new ObjectId(id) });
   if (!usuario) return null;
 
+  if (status === 'inativo' && ehMatriculaProtegida(usuario.matricula)) {
+    throw new Error('Esse usuário não pode ser desativado.')
+  }
+
   if (status === 'inativo' && usuario.tipo === 'admin' && usuario.status === 'ativo') {
     const totalAdminsAtivos = await contarAdminsAtivos(colecao);
     if (totalAdminsAtivos <= 1) {
@@ -97,6 +102,10 @@ export async function mudarTipoUsuario(
 
   const usuario = await colecao.findOne({ _id: new ObjectId(id) });
   if (!usuario) return null;
+
+  if (tipo === 'operario' && ehMatriculaProtegida(usuario.matricula)) {
+    throw new Error('O tipo desse usuário não pode ser alterado.')
+  }
 
   if (tipo === 'operario' && usuario.tipo === 'admin' && usuario.status === 'ativo') {
     const totalAdminsAtivos = await contarAdminsAtivos(colecao);
