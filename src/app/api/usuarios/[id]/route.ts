@@ -1,22 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { alternarStatusUsuario, editarNomeUsuario, mudarTipoUsuario } from '@/lib/usuarios';
 import { respostaNaoAutorizado, respostaSemPermissao, usuarioAutenticado } from '@/lib/autenticacao';
-import { ehMatriculaProtegida } from '@/lib/protecaoAdmin';
 
 export const dynamic = 'force-dynamic';
-
-function comProtecao(usuarios: Awaited<ReturnType<typeof editarNomeUsuario>>) {
-  return usuarios?.map((u) => ({ ...u, protegido: ehMatriculaProtegida(u.matricula) 
-  })) ?? null;
-}
 
 export async function PATCH(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const usuarioLogado = await usuarioAutenticado();
-  if (!usuarioLogado) return respostaNaoAutorizado();
-  if (usuarioLogado.tipo !== 'admin') return respostaSemPermissao();
+  const usuarioLogado = await usuarioAutenticado()
+  if (!usuarioLogado) return respostaNaoAutorizado()
+  if (usuarioLogado.tipo !== 'admin') return respostaSemPermissao()
 
   const body = await req.json();
 
@@ -30,7 +24,7 @@ export async function PATCH(
       if (!usuarios) {
         return NextResponse.json({ erro: 'Usuário não encontrado.' }, { status: 404 });
       }
-      return NextResponse.json(comProtecao(usuarios));
+      return NextResponse.json(usuarios);
     }
 
     if ('status' in body) {
@@ -41,7 +35,7 @@ export async function PATCH(
       if (!usuarios) {
         return NextResponse.json({ erro: 'Usuário não encontrado.' }, { status: 404 });
       }
-      return NextResponse.json(comProtecao(usuarios));
+      return NextResponse.json(usuarios);
     }
 
     if ('tipo' in body) {
@@ -52,11 +46,12 @@ export async function PATCH(
       if (!usuarios) {
         return NextResponse.json({ erro: 'Usuário não encontrado.' }, { status: 404 });
       }
-      return NextResponse.json(comProtecao(usuarios));
+      return NextResponse.json(usuarios);
     }
 
     return NextResponse.json({ erro: 'Nenhum campo válido enviado.' }, { status: 400 });
   } catch (e) {
+    // Trava de "último admin", por exemplo -- erro lançado pelo usuarios.ts
     return NextResponse.json({ erro: (e as Error).message }, { status: 409 });
   }
 }

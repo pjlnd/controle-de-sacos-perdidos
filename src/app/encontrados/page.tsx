@@ -8,9 +8,11 @@ import EmptyState from '@/components/EmptyState';
 import Toast from '@/components/Toast';
 import SacoModal from '@/components/SacoModal';
 import type { EditarSacoInput, SacoFlat } from '@/lib/types';
+import { useSessao } from '@/contexts/SessaoContext';
 
 export default function EncontradosPage() {
   const { sacos, carregando, erro, editarSaco, excluirSaco } = useSacos();
+  const { sessao } = useSessao();
   const [busca, setBusca] = useState('')
   const [filtroData, setFiltroData] = useState('');
   const [filtroCarrossel, setFiltroCarrossel] = useState('');
@@ -100,7 +102,7 @@ async function handleSalvarEdicao(id: string, input: EditarSacoInput) {
       ) : (
         <div className="flex flex-col gap-3">
           {filtrados.map((saco) => (
-            <SacoTag key={saco.id} saco={saco} onExcluir={handleExcluir} onEditar={setSacoEditando}/>
+            <SacoTag key={saco.id} saco={saco} tipo='encontrado' onExcluir={sessao.logado ? handleExcluir : undefined} onEditar={sessao.logado ? setSacoEditando : undefined}/>
           ))}
         </div>
       )}

@@ -8,6 +8,7 @@ import FiltrosBarra from '@/components/Filters';
 import EmptyState from '@/components/EmptyState';
 import Toast from '@/components/Toast';
 import type { EditarSacoInput, SacoFlat } from '@/lib/types';
+import { useSessao } from '@/contexts/SessaoContext';
 
 export default function PerdidosPage() {
   const { sacos, carregando, erro, criarSaco, editarSaco, marcarEncontrado, excluirSaco } = useSacos();
@@ -19,6 +20,7 @@ export default function PerdidosPage() {
   const [filtroTurno, setFiltroTurno] = useState('');
   const [toast, setToast] = useState<{ mensagem: string; variante: 'sucesso' | 'perigo' } | null>(null);
   const [toastKey, setToastKey] = useState(0);
+  const { sessao } = useSessao();
 
   function dispararToast(mensagem: string, variante: 'sucesso' | 'perigo' = 'sucesso') {
     setToast({ mensagem, variante });
@@ -81,7 +83,8 @@ export default function PerdidosPage() {
             <span className="font-mono font-semibold text-alert">{totalPerdidos}</span> saco(s) perdido(s)
           </p>
         </div>
-        <button
+        {sessao.logado && (
+          <button
           type="button"
           onClick={() => setModalAberto(true)}
           aria-label="Registrar novo saco perdido"
@@ -89,6 +92,7 @@ export default function PerdidosPage() {
         >
           +
         </button>
+        )}
       </div>
 
       <FiltrosBarra
@@ -120,9 +124,10 @@ export default function PerdidosPage() {
             <SacoTag
               key={saco.id}
               saco={saco}
-              onEncontrado={handleEncontrado}
-              onExcluir={handleExcluir}
-              onEditar={setSacoEditando}
+              tipo='perdido'
+              onEncontrado={sessao.logado ? handleEncontrado : undefined}
+              onExcluir={sessao.logado ? handleExcluir : undefined}
+              onEditar={sessao.logado ? setSacoEditando : undefined}
             />
           ))}
         </div>
