@@ -1,62 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { alternarStatusUsuario, editarNomeUsuario, mudarTipoUsuario } from '@/lib/usuarios';
-import { respostaNaoAutorizado, respostaSemPermissao, usuarioAutenticado } from '@/lib/autenticacao';
-import { ehMatriculaProtegida } from '@/lib/protecaoAdmin';
+import { atualizarStatusSaco, excluirSaco } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
-
-function comProtecao(usuarios: Awaited<ReturnType<typeof editarNomeUsuario>>) {
-  return usuarios?.map((u) => ({ ...u, protegido: ehMatriculaProtegida(u.matricula) 
-  })) ?? null;
-}
 
 export async function PATCH(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const usuarioLogado = await usuarioAutenticado();
-  if (!usuarioLogado) return respostaNaoAutorizado();
-  if (usuarioLogado.tipo !== 'admin') return respostaSemPermissao();
-
-  const body = await req.json();
-
-  try {
-    if ('nome' in body) {
-      const nome = String(body.nome ?? '').trim();
-      if (!nome) {
-        return NextResponse.json({ erro: 'Nome não pode ficar em branco.' }, { status: 400 });
-      }
-      const usuarios = await editarNomeUsuario(params.id, nome);
-      if (!usuarios) {
-        return NextResponse.json({ erro: 'Usuário não encontrado.' }, { status: 404 });
-      }
-      return NextResponse.json(comProtecao(usuarios));
-    }
-
-    if ('status' in body) {
-      if (!['ativo', 'inativo'].includes(body.status)) {
-        return NextResponse.json({ erro: 'Status inválido.' }, { status: 400 });
-      }
-      const usuarios = await alternarStatusUsuario(params.id, body.status);
-      if (!usuarios) {
-        return NextResponse.json({ erro: 'Usuário não encontrado.' }, { status: 404 });
-      }
-      return NextResponse.json(comProtecao(usuarios));
-    }
-
-    if ('tipo' in body) {
-      if (!['admin', 'operario'].includes(body.tipo)) {
-        return NextResponse.json({ erro: 'Tipo inválido.' }, { status: 400 });
-      }
-      const usuarios = await mudarTipoUsuario(params.id, body.tipo);
-      if (!usuarios) {
-        return NextResponse.json({ erro: 'Usuário não encontrado.' }, { status: 404 });
-      }
-      return NextResponse.json(comProtecao(usuarios));
-    }
-
-    return NextResponse.json({ erro: 'Nenhum campo válido enviado.' }, { status: 400 });
-  } catch (e) {
-    return NextResponse.json({ erro: (e as Error).message }, { status: 409 });
+  const body = (await req.json()) as { status?: 'perdido' | 'encontrado' };
+  if (!body.status || !['perdido', 'encontrado'].includes(body.status)) {
+    return NextResponse.json({ erro: 'Status inválido.' }, { status: 400 });
   }
+
+  const sacos = await atualizarStatusSaco(params.id, body.status);
+  if (!sacos) {
+    return NextResponse.json(
+      { erro: 'Saco não encontrado.' },
+      { status: 404 }
+    );
+  }
+  return NextResponse.json(sacos);
+}
+
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const sacos = await excluirSaco(params.id);
+  if (!sacos) {
+    return NextResponse.json(
+      { erro: 'Saco não encontrado.' },
+      { status: 404 }
+    );
+  }
+  return NextResponse.json(sacos);
 }
